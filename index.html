@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<title>Engineering • Elektromedis</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#062a33">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Elektromedis">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<style>
+:root{
+  --bg:#062a33; --bg2:#0b4250; --ink:#f2fbfa; --muted:#8fb9c0;
+  --accent:#34d1bf; --accent-ink:#04252b; --glass:rgba(8,44,54,.78); --line:rgba(255,255,255,.12);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;min-height:100dvh;margin:0;background:var(--bg);overscroll-behavior:none;
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);
+  -webkit-user-select:none;user-select:none}
+button{font:inherit;cursor:pointer}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+#frame{position:fixed;inset:0;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);
+  padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right);background:var(--bg)}
+#app{width:100%;height:100%;border:0;display:block;background:#fff;border-radius:16px 16px 0 0}
+
+/* Layar muat: otomatis hilang, tanpa tombol */
+#splash{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
+  padding:32px;text-align:center;
+  background:radial-gradient(120% 80% at 50% 0%,var(--bg2) 0%,var(--bg) 60%);
+  transition:opacity .5s ease,visibility .5s}
+#splash.out{opacity:0;visibility:hidden}
+#splash img{width:92px;height:92px;border-radius:24px;box-shadow:0 14px 40px rgba(0,0,0,.4),0 0 0 1px var(--line)}
+#splash h1{font-size:21px;font-weight:700;letter-spacing:.2px;margin:6px 0 0}
+#splash p{margin:0;color:var(--muted);font-size:13.5px}
+#ecg{width:min(260px,70vw);height:44px;margin-top:8px}
+#ecg path{fill:none;stroke:var(--accent);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;
+  stroke-dasharray:420;stroke-dashoffset:420;animation:beat 1.8s linear infinite;
+  filter:drop-shadow(0 0 4px rgba(52,209,191,.7))}
+@keyframes beat{to{stroke-dashoffset:-420}}
+
+
+/* Tombol suara */
+#bell{position:fixed;z-index:20;right:calc(12px + env(safe-area-inset-right));bottom:calc(12px + env(safe-area-inset-bottom));
+  width:42px;height:42px;border-radius:50%;border:1px solid var(--line);background:var(--glass);color:var(--accent);
+  display:none;align-items:center;justify-content:center;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  box-shadow:0 6px 18px rgba(0,0,0,.28);transition:transform .15s,opacity .2s}
+#bell:active{transform:scale(.92)}
+#bell svg{width:20px;height:20px}
+#bell.off{color:var(--muted);opacity:.7}
+#bell.attn::after{content:"";position:absolute;top:6px;right:6px;width:9px;height:9px;border-radius:50%;
+  background:var(--accent);box-shadow:0 0 0 2px var(--bg);animation:pulse 1.6s ease-out infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 2px var(--bg),0 0 0 2px rgba(52,209,191,.7)}100%{box-shadow:0 0 0 2px var(--bg),0 0 0 10px rgba(52,209,191,0)}}
+
+/* Banner pasang */
+#install{position:fixed;z-index:40;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));
+  background:var(--glass);border:1px solid var(--line);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  color:var(--ink);border-radius:20px;padding:14px;display:none;gap:12px;align-items:center;
+  box-shadow:0 16px 40px rgba(0,0,0,.4);transform:translateY(130%);transition:transform .35s;max-width:520px;margin:0 auto}
+#install.show{display:flex;transform:none}
+#install img{width:46px;height:46px;border-radius:12px;flex:none}
+#install .t{flex:1;font-size:13px;line-height:1.4;color:var(--muted)}
+#install .t b{display:block;font-size:14.5px;color:var(--ink);margin-bottom:1px}
+#install .go{background:var(--accent);color:var(--accent-ink);border:0;border-radius:12px;padding:10px 18px;font-weight:700}
+#install .x{background:none;border:0;color:var(--muted);font-size:24px;padding:0 4px;line-height:1}
+
+/* Tombol Install Aplikasi: pil di tengah-bawah, tampil selama belum terpasang & belum login */
+#installBtn{position:fixed;z-index:45;left:50%;bottom:calc(16px + env(safe-area-inset-bottom));transform:translateX(-50%);
+  height:46px;padding:0 20px;border:0;border-radius:23px;background:var(--accent);color:var(--accent-ink);
+  display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px;white-space:nowrap;
+  box-shadow:0 10px 28px rgba(0,0,0,.4)}
+#installBtn:active{transform:translateX(-50%) scale(.96)}
+#installBtn.hidden{display:none}
+#installBtn svg{width:18px;height:18px;flex:none}
+
+/* Toast */
+#toast{position:fixed;z-index:60;left:12px;right:12px;top:calc(10px + env(safe-area-inset-top));max-width:520px;margin:0 auto;
+  background:var(--glass);border:1px solid var(--line);border-left:4px solid var(--accent);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  color:var(--ink);border-radius:14px;padding:12px 16px;font-size:14px;font-weight:600;
+  box-shadow:0 12px 32px rgba(0,0,0,.4);transform:translateY(-170%);transition:transform .35s cubic-bezier(.2,.9,.3,1)}
+#toast.show{transform:none}
+#toast small{display:block;font-weight:400;color:var(--muted);margin-top:2px}
+
+@media (prefers-reduced-motion:reduce){
+  #ecg path{animation:none;stroke-dashoffset:0}
+  #bell.attn::after{animation:none}
+}
+</style>
+</head>
+<body>
+
+
+<button id="installBtn" type="button" aria-label="Pasang aplikasi">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg><span>Install Aplikasi</span>
+</button>
+
+<div id="frame"><iframe id="app" title="Engineering Elektromedis" allow="camera; microphone; geolocation; clipboard-write; fullscreen"></iframe></div>
+
+<div id="splash">
+  <img src="icons/icon-192.png" alt="">
+  <h1>Engineering • Elektromedis</h1>
+  <svg id="ecg" viewBox="0 0 260 44" aria-hidden="true"><path d="M0 24 H78 L88 24 L96 8 L106 40 L114 16 L120 24 H150 L158 24 L164 14 L172 30 L178 24 H260"/></svg>
+  <p>Memuat aplikasi…</p>
+</div>
+
+<button id="bell" aria-label="Suara notifikasi"></button>
+<div id="toast" role="status"></div>
+
+<script>
+/* ============ PENGATURAN ============ */
+const CONFIG = {
+  APP_URL: 'https://script.google.com/macros/s/AKfycbyU6k__G9ex486iS3gvvjWJK7k9u4ONrwl-NdcnEuFUEP_FueE12a6SPuPF2ImNG37Gzw/exec',
+  // Cek laporan baru ke Apps Script (lihat README, bagian doGet ?action=count)
+  POLL_ENABLED: false,
+  POLL_SECONDS: 30,
+  SHOW_BELL: true
+};
+/* ===================================== */
+
+const $ = id => document.getElementById(id);
+const store = {
+  get(k){ try{ return localStorage.getItem(k) }catch(e){ return null } },
+  set(k,v){ try{ localStorage.setItem(k,v) }catch(e){} }
+};
+const isStandalone = () => matchMedia('(display-mode: standalone)').matches ||
+  matchMedia('(display-mode: fullscreen)').matches || navigator.standalone === true;
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+/* ---------- Muat aplikasi & layar muat ---------- */
+const frame = $('app');
+const splashStart = Date.now();
+let splashGone = false;
+function hideSplash(){
+  if (splashGone) return; splashGone = true;
+  const wait = Math.max(0, 900 - (Date.now() - splashStart));
+  setTimeout(() => { $('splash').classList.add('out'); setTimeout(() => $('splash').remove(), 600); }, wait);
+}
+
+/* ---------- Jembatan PWA <-> Apps Script ----------
+   Apps Script tampil di iframe BERTINGKAT: PWA > script.google.com > *.googleusercontent.com.
+   postMessage ke frame.contentWindow hanya sampai ke halaman pembungkus Google, jadi pesan
+   harus diteruskan ke semua frame anak (indeks frame boleh diakses lintas-origin). */
+function postDeep(win, msg, depth){
+  try{ win.postMessage(msg, '*'); }catch(e){}
+  if (depth <= 0) return;
+  let n = 0; try{ n = win.length; }catch(e){}
+  for (let i = 0; i < n; i++){ try{ postDeep(win.frames[i], msg, depth - 1); }catch(e){} }
+}
+function sendToApp(msg){
+  const w = frame.contentWindow; if (!w) return;
+  postDeep(w, msg, 3);
+}
+function shellInfo(){
+  return {type:'pwa-shell', standalone:isStandalone(), ios:isIOS, installAvailable:!isStandalone()};
+}
+function sendShell(){ sendToApp(shellInfo()); }
+
+let appAuthenticated = false;
+
+function updateInstallVisibility(){
+  installBtn.classList.toggle('hidden', isStandalone() || appAuthenticated);
+}
+addEventListener('message', e => {
+  let host = '';
+  try{ host = new URL(e.origin).hostname }catch(_){ return }
+  if (!/(^|\\.)(google|googleusercontent)\\.com$/.test(host)) return;
+  const d = e.data || {};
+  switch (d.type){
+    case 'app-ready':
+      sendShell();
+      break;
+    case 'app-auth-state':
+      appAuthenticated = !!d.loggedIn;
+      updateInstallVisibility();
+      break;
+    case 'pwa-install':
+      doInstall();
+      break;
+  }
+});
+
+frame.addEventListener('load', () => {
+  hideSplash();
+  sendShell(); setTimeout(sendShell, 1500); setTimeout(sendShell, 4000);   // frame dalam dimuat belakangan
+});
+setTimeout(hideSplash, 8000);
+frame.src = CONFIG.APP_URL;
+
+
+/* ---------- Suara ---------- */
+let ctx, audioReady = false, soundOn = store.get('sound') !== 'off';
+function unlockAudio(){
+  try{
+    ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
+    if (ctx.state === 'suspended') ctx.resume();
+    audioReady = ctx.state === 'running' || audioReady;
+  }catch(e){}
+}
+function chime(){
+  if (!soundOn || !ctx) return;
+  if (ctx.state === 'suspended') ctx.resume();
+  const t0 = ctx.currentTime;
+  [[880,0],[1175,.18],[880,.95],[1175,1.13]].forEach(([f,d]) => {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = 'sine'; o.frequency.value = f;
+    g.gain.setValueAtTime(0, t0+d);
+    g.gain.linearRampToValueAtTime(.55, t0+d+.02);
+    g.gain.exponentialRampToValueAtTime(.001, t0+d+.7);
+    o.connect(g).connect(ctx.destination);
+    o.start(t0+d); o.stop(t0+d+.75);
+  });
+}
+/* Buka kunci suara pada sentuhan pertama di luar iframe (mis. banner) */
+['pointerdown','keydown'].forEach(ev => addEventListener(ev, unlockAudio, {once:true, passive:true}));
+
+/* ---------- Notifikasi laporan ---------- */
+let toastTimer;
+function toast(title, body, ms){
+  const t = $('toast');
+  t.innerHTML = '';
+  const b = document.createElement('div'); b.textContent = title; t.appendChild(b);
+  if (body){ const s = document.createElement('small'); s.textContent = body; t.appendChild(s); }
+  t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), ms || 6000);
+}
+let unread = 0;
+async function alertReport(info = {}){
+  const title = info.title || 'Laporan baru masuk';
+  const body  = info.body || '';
+  chime();
+  if (navigator.vibrate) navigator.vibrate([200,100,200]);
+  toast(title, body);
+  if (document.hidden){
+    unread++;
+    if (navigator.setAppBadge) navigator.setAppBadge(unread).catch(()=>{});
+    if ('Notification' in window && Notification.permission === 'granted'){
+      try{
+        const reg = await navigator.serviceWorker.ready;
+        reg.showNotification(title, {body, icon:'icons/icon-192.png', badge:'icons/icon-192.png',
+          tag:'laporan', renotify:true, vibrate:[200,100,200]});
+      }catch(e){}
+    }
+  }
+}
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden){
+    unread = 0; if (navigator.clearAppBadge) navigator.clearAppBadge().catch(()=>{});
+    if (CONFIG.POLL_ENABLED) poll();
+  }
+});
+
+/* Pesan dari aplikasi Apps Script (lihat README) */
+addEventListener('message', e => {
+  let host = ''; try{ host = new URL(e.origin).hostname }catch(_){ return }
+  if (!/(^|\.)(google|googleusercontent)\.com$/.test(host)) return;
+  const d = e.data || {};
+  if (d.type === 'ready') hideSplash();
+  if (d.type === 'laporan-baru') alertReport(d);
+});
+
+/* Cek berkala ke server (opsional) */
+async function poll(){
+  if (document.hidden) return;
+  try{
+    const r = await fetch(CONFIG.APP_URL + '?action=count&_=' + Date.now(), {cache:'no-store'});
+    const j = await r.json(); const n = Number(j.count);
+    if (isNaN(n)) return;
+    const last = store.get('lastCount');
+    if (last !== null && n > Number(last))
+      alertReport({title:'Laporan baru masuk', body: j.latest || (n - Number(last)) + ' laporan baru'});
+    store.set('lastCount', n);
+  }catch(e){}
+}
+if (CONFIG.POLL_ENABLED){ poll(); setInterval(poll, CONFIG.POLL_SECONDS * 1000); }
+
+/* ---------- Tombol suara ---------- */
+const bell = $('bell');
+function drawBell(){
+  bell.classList.toggle('off', !soundOn);
+  bell.classList.toggle('attn', soundOn && !audioReady);
+  bell.innerHTML = soundOn
+    ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 7 3 8 3 8H3s3-1 3-8"/><path d="M10 21a2 2 0 0 0 4 0"/></svg>'
+    : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 9-5M18 9c0 3 .6 5 1.5 6.5M3 17s3-1 3-8M10 21a2 2 0 0 0 4 0M2 2l20 20"/></svg>';
+}
+bell.onclick = async () => {
+  const firstActivation = !audioReady;
+  unlockAudio();
+  if ('Notification' in window && Notification.permission === 'default'){
+    try{ await Notification.requestPermission(); }catch(e){}
+  }
+  // Ketukan pertama hanya mengaktifkan suara (tidak mematikan)
+  if (!(firstActivation && soundOn)) soundOn = !soundOn;
+  audioReady = true;
+  store.set('sound', soundOn ? 'on' : 'off'); drawBell();
+  if (soundOn) chime();
+};
+drawBell();
+if (CONFIG.SHOW_BELL) bell.style.display = 'flex';
+setInterval(() => { if (ctx && ctx.state === 'running' && !audioReady){ audioReady = true; drawBell(); } }, 1500);
+
+/* ---------- Tombol Install Aplikasi ---------- */
+let deferred;
+const installBtn = $('installBtn');
+updateInstallVisibility();
+
+addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferred = e;
+  updateInstallVisibility();
+});
+
+addEventListener('appinstalled', () => {
+  deferred = null;
+  updateInstallVisibility();
+  sendShell();
+  toast('Aplikasi berhasil dipasang', 'Buka dari ikon di layar utama.');
+});
+
+async function doInstall(){
+  if (isStandalone()){ toast('Aplikasi sudah terpasang'); return; }
+  if (deferred){
+    try{
+      deferred.prompt();
+      const r = await deferred.userChoice;
+      deferred = null;
+      if (r && r.outcome === 'accepted') updateInstallVisibility();
+    }catch(e){}
+    return;
+  }
+  if (isIOS){
+    toast('Pasang di iPhone/iPad', 'Ketuk tombol Bagikan (kotak dengan panah) → Tambah ke Layar Utama.', 9000);
+  } else {
+    toast('Pasang lewat menu browser', 'Buka menu ⋮ di browser lalu pilih “Instal aplikasi” atau “Tambahkan ke layar utama”.', 9000);
+  }
+}
+installBtn.addEventListener('click', doInstall);
+
+/* ---------- Service worker ---------- */
+if ('serviceWorker' in navigator){
+  addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(()=>{}));
+}
+</script>
+</body>
+</html>
